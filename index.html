@@ -400,8 +400,8 @@
                         
                         <!-- Photo 1: Sydney -->
                         <div class="border-3 border-black bg-white pixel-border overflow-hidden">
-                            <div class="h-44 bg-gray-200 overflow-hidden relative">
-                                <img src="Growing up.jpg" onerror="this.src='https://placehold.co/600x400/C84C31/ffffff?text=Growing+Up'" alt="Sydney Origins" class="w-full h-full object-cover">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative flex items-center justify-center">
+                                <img src="growing-up.jpeg" onerror="handleImageError(this, ['growing-up.jpeg', 'growing-up.jpg', 'Growing up.jpg', 'Growing Up.jpg'], 'https://placehold.co/600x400/C84C31/ffffff?text=Growing+Up')" alt="Sydney Origins" class="w-full h-full object-cover object-center">
                             </div>
                             <div class="p-3 bg-white font-mono-code text-xs">
                                 <span class="font-black block text-black">1. SYDNEY ORIGINS</span>
@@ -411,8 +411,8 @@
 
                         <!-- Photo 2: All-American Track -->
                         <div class="border-3 border-black bg-white pixel-border overflow-hidden">
-                            <div class="h-44 bg-gray-200 overflow-hidden relative">
-                                <img src="College running.jpg" onerror="this.src='https://placehold.co/600x400/111827/ffffff?text=College+Running'" alt="UNM Track" class="w-full h-full object-cover">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative flex items-center justify-center">
+                                <img src="college-running.JPG" onerror="handleImageError(this, ['college-running.JPG', 'college-running.jpg', 'College running.jpg', 'College Running.jpg'], 'https://placehold.co/600x400/111827/ffffff?text=College+Running')" alt="UNM Track" class="w-full h-full object-cover object-center">
                             </div>
                             <div class="p-3 bg-white font-mono-code text-xs">
                                 <span class="font-black block text-track-orange">2. UNM ALL-AMERICAN 800M</span>
@@ -422,8 +422,8 @@
 
                         <!-- Photo 3: MechE Grad -->
                         <div class="border-3 border-black bg-white pixel-border overflow-hidden">
-                            <div class="h-44 bg-gray-200 overflow-hidden relative">
-                                <img src="UNM grad.jpg" onerror="this.src='https://placehold.co/600x400/CCFF00/000000?text=UNM+Graduation'" alt="UNM MechE" class="w-full h-full object-cover">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative flex items-center justify-center">
+                                <img src="unm-grad.jpeg" onerror="handleImageError(this, ['unm-grad.jpeg', 'unm-grad.jpg', 'UNM grad.jpg', 'UNM Grad.jpg'], 'https://placehold.co/600x400/CCFF00/000000?text=UNM+Graduation')" alt="UNM MechE" class="w-full h-full object-cover object-center">
                             </div>
                             <div class="p-3 bg-white font-mono-code text-xs">
                                 <span class="font-black block text-black">3. MECHE COMMENCEMENT</span>
@@ -433,8 +433,8 @@
 
                         <!-- Photo 4: Introba Sydney -->
                         <div class="border-3 border-black bg-white pixel-border overflow-hidden">
-                            <div class="h-44 bg-gray-200 overflow-hidden relative">
-                                <img src="Introba office.jpg" onerror="this.src='https://placehold.co/600x400/C84C31/ffffff?text=Introba+Office'" alt="Introba Team" class="w-full h-full object-cover">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative flex items-center justify-center">
+                                <img src="introba-office.jpg" onerror="handleImageError(this, ['introba-office.jpg', 'Introba office.jpg', 'Introba Office.jpg'], 'https://placehold.co/600x400/C84C31/ffffff?text=Introba+Office')" alt="Introba Team" class="w-full h-full object-cover object-center">
                             </div>
                             <div class="p-3 bg-white font-mono-code text-xs">
                                 <span class="font-black block text-black">4. INTROBA SYDNEY TEAM</span>
@@ -444,8 +444,8 @@
 
                         <!-- Photo 5: UofL Relay GA -->
                         <div class="border-3 border-black bg-white pixel-border overflow-hidden sm:col-span-2 lg:col-span-1">
-                            <div class="h-44 bg-gray-200 overflow-hidden relative">
-                                <img src="Grad assistant.jpg" onerror="this.src='https://placehold.co/600x400/111827/ffffff?text=Grad+Assistant'" alt="UofL GA" class="w-full h-full object-cover">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative flex items-center justify-center">
+                                <img src="grad-assistant.jpg" onerror="handleImageError(this, ['grad-assistant.jpg', 'Grad assistant.jpg', 'Grad Assistant.jpg'], 'https://placehold.co/600x400/111827/ffffff?text=Grad+Assistant')" alt="UofL GA" class="w-full h-full object-cover object-center">
                             </div>
                             <div class="p-3 bg-white font-mono-code text-xs">
                                 <span class="font-black block text-track-orange">5. UOFL MBA & GRAD ASSISTANT</span>
@@ -1324,6 +1324,21 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             updateHUD();
             drawWindingTrack();
+        }
+
+        // Auto-retry image loading for case-sensitivity, URL spaces, and extension variations
+        function handleImageError(img, fallbacks, placeholder) {
+            if (!img.dataset.failIndex) {
+                img.dataset.failIndex = "0";
+            }
+            let idx = parseInt(img.dataset.failIndex, 10);
+            if (idx < fallbacks.length) {
+                img.dataset.failIndex = (idx + 1).toString();
+                img.src = fallbacks[idx];
+            } else {
+                img.onerror = null;
+                img.src = placeholder;
+            }
         }
 
         window.onload = function() {
