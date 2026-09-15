@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethan Brouw | Engineered Physiology</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'off-white': '#FAF8F5',
+                        'track-orange': '#C84C31',
+                        'track-dark': '#111827',
+                        'neon-spike': '#CCFF00',
+                        'card-bg': '#FFFFFF'
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'Courier', 'monospace'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #FAF8F5;
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow-x: hidden;
+            color: #111827;
+        }
+
+        .font-mono-code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Pixel borders & arcade shadows */
+        .pixel-border {
+            border: 3px solid #000;
+            box-shadow: 5px 5px 0px 0px #000;
+        }
+
+        .pixel-border-lg {
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0px 0px #000;
+        }
+
+        .pixel-btn {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pixel-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 7px 7px 0px 0px #000;
+        }
+        .pixel-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+
+        /* Large Mayaportal Editorial Watermark Text */
+        .editorial-bg-title {
+            font-size: clamp(2rem, 5vw, 5.2rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 0.9;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, 0.14);
+            user-select: none;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Canvas track backdrop container styling */
+        #track-canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF8F5;
+            border-left: 2px solid #000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C84C31;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen selection:bg-track-orange selection:text-white">
+
+    <!-- TOP FIXED HUD HEADER -->
+    <header class="fixed top-0 left-0 w-full z-50 border-b-4 border-black bg-[#FAF8F5]/95 backdrop-blur-md px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md">
+        <div class="flex items-center gap-3">
+            <span class="inline-block w-3.5 h-3.5 bg-red-600 animate-ping rounded-full"></span>
+            <div>
+                <h1 class="text-base md:text-lg font-black tracking-wider text-black font-mono-code uppercase">
+                    ETHAN BROUW <span class="text-track-orange">//</span> ENGINEERED PHYSIOLOGY
+                </h1>
+                <p class="text-[11px] text-gray-700 font-bold font-mono-code -mt-0.5">
+                    NCAA ALL-AMERICAN 800M &bull; MECHANICAL ENGINEER &bull; MBA '27
+                </p>
+            </div>
+        </div>
+
+        <!-- RACE TELEMETRY HUD -->
+        <div class="hidden sm:flex items-center gap-4 bg-white border-2 border-black px-3 py-1.5 rounded pixel-border text-xs font-mono-code">
+            <div>
+                <span class="text-gray-500 uppercase block font-bold text-[9px]">DISTANCE</span>
+                <span id="hud-distance" class="font-black text-sm text-track-orange">0m / 800m</span>
+            </div>
+            <div class="h-6 w-0.5 bg-black"></div>
+            <div>
+                <span class="text-gray-500 uppercase block font-bold text-[9px]">LANE</span>
+                <span id="hud-lane" class="font-black text-sm text-black">LANE 2</span>
+            </div>
+            <div class="h-6 w-0.5 bg-black"></div>
+            <div>
+                <span class="text-gray-500 uppercase block font-bold text-[9px]">PACE</span>
+                <span id="hud-pace" class="font-black text-sm text-green-700">1:47.80</span>
+            </div>
+        </div>
+
+        <!-- MODE TOGGLES & CONTROLS -->
+        <div class="flex items-center gap-2">
+            <button id="toggle-view-btn" onclick="toggleViewMode()" class="pixel-btn bg-black text-white font-mono-code font-bold text-xs px-3 py-2 border-2 border-black flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice"></i>
+                <span id="view-mode-label">FAST-TRACK RESUME</span>
+            </button>
+            <button onclick="resetRunner()" title="Reset Runner to Start" class="pixel-btn bg-white text-black font-mono-code font-bold text-xs px-3 py-2 border-2 border-black">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- FULL PAGE WINDING CANVAS TRACK BACKGROUND -->
+    <div id="track-canvas-container">
+        <canvas id="winding-track-canvas"></canvas>
+    </div>
+
+    <!-- MAIN ARCADE & EDITORIAL TRACK VIEW -->
+    <main id="arcade-container" class="relative pt-24 min-h-screen z-10">
+
+        <!-- SIDE QUICK NAVIGATION DIRECTORY -->
+        <aside class="fixed left-4 top-24 z-40 hidden 2xl:block w-60 bg-white/95 backdrop-blur border-3 border-black p-3.5 pixel-border font-mono-code text-xs shadow-lg">
+            <h2 class="font-extrabold border-b-2 border-black pb-1 mb-2 uppercase text-track-orange flex justify-between items-center text-[11px]">
+                <span>RACE CHECKPOINTS</span>
+                <i class="fa-solid fa-flag-checkered"></i>
+            </h2>
+            <div class="space-y-1">
+                <button onclick="scrollToCheckpoint('ckpt-0')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">0m — Thesis & Blocks</button>
+                <button onclick="scrollToCheckpoint('ckpt-150')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">150m — Pitch Deck</button>
+                <button onclick="scrollToCheckpoint('ckpt-300')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">300m — Leadership Matrix</button>
+                <button onclick="scrollToCheckpoint('ckpt-450')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">450m — Defining Moments</button>
+                <button onclick="scrollToCheckpoint('ckpt-550')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">550m — Stadium Artifacts</button>
+                <button onclick="scrollToCheckpoint('ckpt-750')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">750m — Three Horizons</button>
+                <button onclick="scrollToCheckpoint('ckpt-800')" class="w-full text-left hover:bg-orange-100 p-1.5 text-[11px] font-bold border border-transparent hover:border-black transition-colors block">800m — Finish Line</button>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t-2 border-black text-[10px] text-gray-700">
+                <p class="font-bold uppercase text-black mb-1"><i class="fa-solid fa-gamepad mr-1"></i> CONTROLS:</p>
+                <p>&bull; Scroll or Up/Down to Run</p>
+                <p>&bull; Left/Right Arrows to Steer Lanes</p>
+            </div>
+        </aside>
+
+        <!-- CHECKPOINTS EDITORIAL CONTENT STACK -->
+        <div class="max-w-5xl mx-auto px-4 md:px-16 lg:px-24 py-8 space-y-36 relative z-10">
+
+            <!-- CHECKPOINT 0M: THESIS & BLOCKS -->
+            <section id="ckpt-0" class="scroll-mt-28 relative pt-24 md:pt-32">
+                <div class="editorial-bg-title absolute top-0 left-0">000M / BLOCKS</div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <div class="lg:col-span-8 bg-white/95 backdrop-blur border-4 border-black p-6 md:p-8 pixel-border-lg relative z-10">
+                        <div class="flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+                            <span class="bg-black text-white font-mono-code font-bold text-xs px-3 py-1 uppercase">CHECKPOINT 0M</span>
+                            <span class="font-mono-code font-black text-track-orange text-sm">STARTING BLOCKS</span>
+                        </div>
+
+                        <h2 class="text-2xl md:text-3xl font-black tracking-tight text-black uppercase mb-3">
+                            WORKING THESIS &mdash; CURIOSITY & UNTAMED WONDER
+                        </h2>
+                        
+                        <p class="text-sm leading-relaxed text-gray-800 mb-6 font-medium">
+                            Driven by curiosity and an innate compulsion to solve complex physical and operational problems. By understanding human biomechanics, thermal systems, and engineering design constraints, we turn breakdown points into breakthrough performance. Who I am is shaped by continuous learning and childlike wonder.
+                        </p>
+
+                        <!-- QUOTES GRID -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-orange-50/90 border-2 border-black p-4 pixel-border">
+                                <p class="text-xs italic font-semibold text-gray-900 leading-normal">
+                                    "The best time to plant a tree was 30 years ago. The second best time is now."
+                                </p>
+                                <span class="block font-mono-code text-[11px] font-bold text-track-orange mt-2 uppercase">&mdash; Chinese Proverb</span>
+                            </div>
+
+                            <div class="bg-yellow-50/90 border-2 border-black p-4 pixel-border">
+                                <p class="text-xs italic font-semibold text-gray-900 leading-normal">
+                                    "I think age is terribly overrated. You're okay as long as you don't grow up. By all means, grow old, but don't mature. Remain childlike, retain wonder, the ability to be flabbergasted by something."
+                                </p>
+                                <span class="block font-mono-code text-[11px] font-bold text-black mt-2 uppercase">&mdash; Billy Connolly</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-4 bg-track-orange text-white border-4 border-black p-6 pixel-border-lg font-mono-code">
+                        <h3 class="font-bold text-sm uppercase tracking-wider border-b-2 border-white pb-2 mb-3">KEY SPECS</h3>
+                        <ul class="text-xs space-y-2">
+                            <li><strong>EVENT:</strong> 800m Outdoor & Indoor</li>
+                            <li><strong>PB TIME:</strong> 1:47.80</li>
+                            <li><strong>HONORS:</strong> NCAA All-American</li>
+                            <li><strong>DEGREE:</strong> B.S. Mechanical Eng.</li>
+                            <li><strong>CURRENT:</strong> MBA Candidate '27 (4.0 GPA)</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECKPOINT 150M: PITCH DECK -->
+            <section id="ckpt-150" class="scroll-mt-28 relative pt-16 md:pt-20">
+                <div class="editorial-bg-title absolute top-0 right-0 text-right">150M / PITCH REALITY</div>
+
+                <div class="bg-white/95 backdrop-blur border-4 border-black p-6 md:p-8 pixel-border-lg relative z-10 space-y-6">
+                    <div class="flex flex-wrap items-center justify-between border-b-4 border-black pb-3">
+                        <span class="bg-track-orange text-white font-mono-code font-bold text-xs px-3 py-1 uppercase">CHECKPOINT 150M</span>
+                        <h2 class="text-xl md:text-2xl font-black uppercase text-black">WHY ME? WHY NOW? &bull; PITCH DECK</h2>
+                    </div>
+
+                    <p class="text-xs font-mono-code font-bold text-gray-600 uppercase">
+                        BRIDGING HIGH-LEVEL BUSINESS STRATEGY WITH DAILY TECHNICAL EXECUTION
+                    </p>
+
+                    <!-- 3 SLIDES GRID -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Slide 1 -->
+                        <div class="border-3 border-black p-5 bg-gray-50/90 pixel-border flex flex-col justify-between">
+                            <div>
+                                <span class="bg-black text-white font-mono-code font-bold text-[10px] px-2 py-0.5 uppercase inline-block mb-3">SLIDE 1</span>
+                                <h3 class="font-bold text-base text-black mb-3 border-b-2 border-black pb-1">The Reality I See</h3>
+                                <ul class="text-xs text-gray-800 space-y-2.5">
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-triangle-exclamation text-track-orange mt-0.5"></i>
+                                        <span><strong>Communication Failure:</strong> Mechanical & electrical designs break when teams silo.</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-plane-departure text-black mt-0.5"></i>
+                                        <span><strong>Clarity Under Pressure:</strong> Upgrading public infrastructure (e.g. Sydney Airport) demands calm engineering leadership.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Slide 2 -->
+                        <div class="border-3 border-black p-5 bg-orange-50/90 pixel-border flex flex-col justify-between">
+                            <div>
+                                <span class="bg-track-orange text-white font-mono-code font-bold text-[10px] px-2 py-0.5 uppercase inline-block mb-3">SLIDE 2</span>
+                                <h3 class="font-bold text-base text-black mb-3 border-b-2 border-black pb-1">The Reality of Me</h3>
+                                <ul class="text-xs text-gray-800 space-y-2.5">
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-screwdriver-wrench text-black mt-0.5"></i>
+                                        <span><strong>Grounded Practice:</strong> Hands-on experience at Introba with Revit, Bluebeam, and Airtable.</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-stopwatch text-track-orange mt-0.5"></i>
+                                        <span><strong>Track Resilience:</strong> Elite 800m discipline translated into sustained high performance.</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-comments text-black mt-0.5"></i>
+                                        <span><strong>Lead by Listening:</strong> Psychology & business foundations to build trust.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3 -->
+                        <div class="border-3 border-black p-5 bg-yellow-50/90 pixel-border flex flex-col justify-between">
+                            <div>
+                                <span class="bg-yellow-400 text-black font-mono-code font-bold text-[10px] px-2 py-0.5 uppercase inline-block mb-3">SLIDE 3</span>
+                                <h3 class="font-bold text-base text-black mb-3 border-b-2 border-black pb-1">Why Me? Why Now?</h3>
+                                <ul class="text-xs text-gray-800 space-y-2.5">
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-chess-knight text-black mt-0.5"></i>
+                                        <span><strong>Strategy + Execution:</strong> Connecting big-picture MBA goals with granular design reality.</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <i class="fa-solid fa-handshake-angle text-black mt-0.5"></i>
+                                        <span><strong>Steady Hand:</strong> Calm, decisive presence when deadlines tighten.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECKPOINT 300M: LEADERSHIP MATRIX -->
+            <section id="ckpt-300" class="scroll-mt-28 relative pt-16 md:pt-20">
+                <div class="editorial-bg-title absolute top-0 left-0">300M / PRESENCE WHEEL</div>
+
+                <div class="bg-white/95 backdrop-blur border-4 border-black p-6 md:p-8 pixel-border-lg relative z-10">
+                    <div class="flex flex-wrap items-center justify-between border-b-4 border-black pb-3 mb-6">
+                        <span class="bg-black text-white font-mono-code font-bold text-xs px-3 py-1 uppercase">CHECKPOINT 300M</span>
+                        <h2 class="text-xl md:text-2xl font-black uppercase text-black">LEADERSHIP REALITY & PRESENCE WHEEL</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                        <div class="lg:col-span-7 space-y-4">
+                            <p class="text-sm text-gray-800 leading-relaxed font-medium">
+                                Understanding my leadership profile: driving self-actualization by leveraging high <strong>Systems Ownership</strong> and <strong>Vision Crafting</strong> while actively strengthening structured <strong>Process Design</strong>.
+                            </p>
+
+                            <!-- RATINGS BAR MATRIX -->
+                            <div class="space-y-3 font-mono-code text-xs pt-2">
+                                <div>
+                                    <div class="flex justify-between font-bold mb-1">
+                                        <span>SYSTEMS OWNERSHIP:</span>
+                                        <span class="text-green-700 font-extrabold">4.0 / 5.0 (HIGHEST STRENGTH)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 h-3 border border-black">
+                                        <div class="bg-green-600 h-full" style="width: 80%"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between font-bold mb-1">
+                                        <span>VISION CRAFTING:</span>
+                                        <span class="text-green-700 font-extrabold">4.0 / 5.0 (HIGHEST STRENGTH)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 h-3 border border-black">
+                                        <div class="bg-green-600 h-full" style="width: 80%"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between font-bold mb-1">
+                                        <span>DIALOGUE FACILITATION:</span>
+                                        <span class="text-blue-700 font-extrabold">3.67 / 5.0 (PROFICIENT)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 h-3 border border-black">
+                                        <div class="bg-blue-600 h-full" style="width: 73.4%"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between font-bold mb-1">
+                                        <span>PROCESS DESIGN:</span>
+                                        <span class="text-track-orange font-extrabold">2.67 / 5.0 (DEVELOPMENT ZONE)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 h-3 border border-black">
+                                        <div class="bg-track-orange h-full" style="width: 53.4%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CANVAS RADAR WHEEL -->
+                        <div class="lg:col-span-5 flex flex-col items-center justify-center bg-gray-50 p-4 border-3 border-black pixel-border">
+                            <h4 class="font-mono-code text-xs font-bold text-black uppercase mb-2">RADAR PRESENCE MATRIX</h4>
+                            <canvas id="leadership-radar-canvas" width="280" height="240" class="bg-white border-2 border-black"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECKPOINT 450M: DEFINING MOMENTS -->
+            <section id="ckpt-450" class="scroll-mt-28 relative pt-16 md:pt-20">
+                <div class="editorial-bg-title absolute top-0 right-0 text-right">450M / DEFINING MOMENTS</div>
+
+                <div class="bg-white/95 backdrop-blur border-4 border-black p-6 md:p-8 pixel-border-lg relative z-10 space-y-6">
+                    <div class="flex flex-wrap items-center justify-between border-b-4 border-black pb-3">
+                        <span class="bg-track-orange text-white font-mono-code font-bold text-xs px-3 py-1 uppercase">CHECKPOINT 450M</span>
+                        <h2 class="text-xl md:text-2xl font-black uppercase text-black">THE MOMENTS THAT DEFINED ME</h2>
+                    </div>
+
+                    <p class="text-xs font-mono-code font-bold text-gray-700">
+                        SYDNEY HARBOUR ➔ UNM ALL-AMERICAN ➔ INTROBA CONSULTING ➔ LOUISVILLE GRAD ASSISTANT
+                    </p>
+
+                    <!-- 5 PHOTOS GRID -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        
+                        <!-- Photo 1: Sydney -->
+                        <div class="border-3 border-black bg-white pixel-border overflow-hidden">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative">
+                                <img src="syd.jpg" onerror="this.src='https://placehold.co/600x400/C84C31/ffffff?text=Sydney+Origins'" alt="Sydney Origins" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 bg-white font-mono-code text-xs">
+                                <span class="font-black block text-black">1. SYDNEY ORIGINS</span>
+                                <span class="text-[11px] text-gray-600">Growth, IB Diploma & Psychology foundations.</span>
+                            </div>
+                        </div>
+
+                        <!-- Photo 2: All-American Track -->
+                        <div class="border-3 border-black bg-white pixel-border overflow-hidden">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative">
+                                <img src="JES52440.jpg" onerror="this.src='https://placehold.co/600x400/111827/ffffff?text=UNM+All-American+800m'" alt="UNM Track" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 bg-white font-mono-code text-xs">
+                                <span class="font-black block text-track-orange">2. UNM ALL-AMERICAN 800M</span>
+                                <span class="text-[11px] text-gray-600">Peak athletic resilience & 1:47.80 standard.</span>
+                            </div>
+                        </div>
+
+                        <!-- Photo 3: MechE Grad -->
+                        <div class="border-3 border-black bg-white pixel-border overflow-hidden">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative">
+                                <img src="IMG_5149.jpg" onerror="this.src='https://placehold.co/600x400/CCFF00/000000?text=UNM+MechE+Commencement'" alt="UNM MechE" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 bg-white font-mono-code text-xs">
+                                <span class="font-black block text-black">3. MECHE COMMENCEMENT</span>
+                                <span class="text-[11px] text-gray-600">B.S. Mechanical Eng. Cum Laude (GPA 3.69).</span>
+                            </div>
+                        </div>
+
+                        <!-- Photo 4: Introba Sydney -->
+                        <div class="border-3 border-black bg-white pixel-border overflow-hidden">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative">
+                                <img src="team1.jpg" onerror="this.src='https://placehold.co/600x400/C84C31/ffffff?text=Introba+Sydney+Team'" alt="Introba Team" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 bg-white font-mono-code text-xs">
+                                <span class="font-black block text-black">4. INTROBA SYDNEY TEAM</span>
+                                <span class="text-[11px] text-gray-600">HVAC replacement & infrastructure design.</span>
+                            </div>
+                        </div>
+
+                        <!-- Photo 5: UofL Relay GA -->
+                        <div class="border-3 border-black bg-white pixel-border overflow-hidden sm:col-span-2 lg:col-span-1">
+                            <div class="h-44 bg-gray-200 overflow-hidden relative">
+                                <img src="IMG_6093.jpg" onerror="this.src='https://placehold.co/600x400/111827/ffffff?text=UofL+Graduate+Assistant'" alt="UofL GA" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-3 bg-white font-mono-code text-xs">
+                                <span class="font-black block text-track-orange">5. UOFL MBA & GRAD ASSISTANT</span>
+                                <span class="text-[11px] text-gray-600">MBA Candidate (GPA 4.0) & team mentor.</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECKPOINT 550M: STADIUM ARTIFACTS (DIRECT EMBEDS) -->
+            <section id="ckpt-550" class="scroll-mt-28 relative pt-16 md:pt-20">
+                <div class="editorial-bg-title absolute top-0 left-0">550M / STADIUM LABS</div>
+
+                <div class="bg-white/95 backdrop-blur border-4 border-black p-6 md:p-8 pixel-border-lg relative z-10 space-y-6">
+                    <div class="flex flex-wrap items-center justify-between border-b-4 border-black pb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="bg-black text-white font-mono-code font-bold text-xs px-3 py-1 uppercase">CHECKPOINT 550M</span>
+                            <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-black uppercase text-black">STADIUM LABS & LIVE ARTIFACTS</h2>
+                    </div>
+
+                    <p class="text-xs font-mono-code text-gray-800 leading-relaxed">
+                        Interactive software apps engineered for high-performance biomechanics and system analysis. Test both live web applications directly below!
+                    </p>
+
+                    <!-- TAB SELECTOR FOR EMBEDDED IFRAMES -->
+                    <div class="flex items-center gap-2 border-b-2 border-black pb-2">
+                        <button id="tab-vdot" onclick="switchEmbeddedApp('vdot')" class="pixel-btn bg-track-orange text-white font-mono-code font-bold text-xs px-4 py-2 border-2 border-black">
+                            <i class="fa-solid fa-calculator mr-2"></i>VDOT LAB (PERFORMANCE ENGINE)
+                        </button>
+                        <button id="tab-meta" onclick="switchEmbeddedApp('meta')" class="pixel-btn bg-white text-black font-mono-code font-bold text-xs px-4 py-2 border-2 border-black">
+                            <i class="fa-solid fa-microchip mr-2"></i>META LAB (PLATFORM)
+                        </button>
+                    </div>
+
+                    <!-- DIRECT EMBED SCREEN DISPLAY -->
+                    <div class="border-4 border-black bg-black pixel-border rounded relative overflow-hidden">
+                        <div class="bg-black text-white px-4 py-2 text-xs font-mono-code flex justify-between items-center border-b-2 border-gray-800">
+                            <span id="embed-title-text" class="font-bold text-yellow-400">VDOT LAB — https://vdot-lab.vercel.app/</span>
+                            <a id="embed-external-link" href="https://vdot-lab.vercel.app/" target="_blank" class="hover:underline text-gray-300">
+                                Open in New Tab <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                        <iframe id="live-stadium-iframe" src="https://vdot-lab.vercel.app/" class="w-full h-[520px] bg-white border-none" title="Live Artifact Preview"></iframe>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECKPOINT 750M: THREE HORIZONS -->
+            <section id="ckpt-750" class="scroll-mt-28 relative pt-16 md:pt-20">
+                <div class="editorial-bg-title absolute top-0 right-0 text-right">750M / THREE HORIZONS</div>
+
+                <div class="bg-white/95 backdrop-blur border-4 border-black p-6 md:p-8 pixel-border-lg relative z-10 space-y-6">
+                    <div class="flex flex-wrap items-center justify-between border-b-4 border-black pb-3">
+                        <span class="bg-track-orange text-white font-mono-code font-bold text-xs px-3 py-1 uppercase">CHECKPOINT 750M</span>
+                        <h2 class="text-xl md:text-2xl font-black uppercase text-black">THREE HORIZONS ARCHITECTURE</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="border-3 border-black p-5 bg-orange-50/90 pixel-border flex flex-col justify-between">
+                            <div>
+                                <span class="bg-black text-white font-mono-code font-bold text-xs px-2.5 py-1 uppercase inline-block mb-3">H1 / PERFORM</span>
+                                <h3 class="font-black text-base text-black mb-2">Execution & Presence</h3>
+                                <p class="text-xs text-gray-800 leading-relaxed font-medium">
+                                    Efficient at executing tasks, consistent in measure and demeanor, as well as a team collaborator who can read the room and get the most out of individuals and teams.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="border-3 border-black p-5 bg-yellow-50/90 pixel-border flex flex-col justify-between">
+                            <div>
+                                <span class="bg-track-orange text-white font-mono-code font-bold text-xs px-2.5 py-1 uppercase inline-block mb-3">H2 / TRANSFORM</span>
+                                <h3 class="font-black text-base text-black mb-2">Alter Ego & Mindset</h3>
+                                <p class="text-xs text-gray-800 leading-relaxed font-medium">
+                                    Mastering the mental side of performance, creating a dedicated alter ego through journaling and visualization. Creating a version of myself that performs the tasks I want to perform.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="border-3 border-black p-5 bg-green-50/90 pixel-border flex flex-col justify-between">
+                            <div>
+                                <span class="bg-black text-white font-mono-code font-bold text-xs px-2.5 py-1 uppercase inline-block mb-3">H3 / EXPLORE</span>
+                                <h3 class="font-black text-base text-black mb-2">Mental Rhetoric</h3>
+                                <p class="text-xs text-gray-800 leading-relaxed font-medium">
+                                    Developing a genuinely balanced and consistent mental rhetoric around performance which helps me to become the best version of myself.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECKPOINT 800M: FINISH PODIUM -->
+            <section id="ckpt-800" class="scroll-mt-28 relative pt-16 md:pt-20 pb-16">
+                <div class="editorial-bg-title absolute top-0 left-0">800M / FINISH LINE</div>
+
+                <div class="space-y-6 relative z-10">
+                    <!-- Congratulations Card -->
+                    <div class="bg-white/95 backdrop-blur border-4 border-black p-6 pixel-border-lg">
+                        <div class="bg-track-orange text-white font-mono-code font-bold text-xs px-3 py-1 uppercase border-b-2 border-black inline-block mb-3">
+                            800M &mdash; FINISH LINE
+                        </div>
+                        <h3 class="text-xl font-black text-black font-mono-code uppercase mb-2">GOLD MEDAL PODIUM</h3>
+                        <p class="text-xs md:text-sm font-mono-code text-gray-800 font-bold leading-relaxed">
+                            Congratulations! You completed the 800m race. Bridging engineering science, leadership, and athletic endurance.
+                        </p>
+                    </div>
+
+                    <!-- Main Finish Banner Box -->
+                    <div class="bg-black/95 backdrop-blur text-white border-4 border-black p-8 md:p-12 pixel-border-lg text-center space-y-6">
+                        <div class="w-20 h-20 bg-yellow-400 border-4 border-white rounded-full flex items-center justify-center mx-auto text-4xl text-black shadow-lg animate-bounce">
+                            🥇
+                        </div>
+
+                        <h2 class="text-3xl md:text-4xl font-black uppercase text-yellow-400 tracking-tight font-mono-code">
+                            800M GOLD MEDAL FINISH
+                        </h2>
+
+                        <p class="text-xs md:text-sm font-mono-code text-gray-300 max-w-2xl mx-auto tracking-wider uppercase font-bold">
+                            ETHAN BROUW &bull; NCAA ALL-AMERICAN &bull; MECHANICAL ENGINEER &bull; MBA '27
+                        </p>
+
+                        <p class="text-xs text-gray-400 max-w-xl mx-auto leading-relaxed font-mono-code">
+                            Ready to connect on engineering consulting, business strategy, or high-performance leadership.
+                        </p>
+
+                        <div class="flex flex-wrap justify-center gap-4 pt-4">
+                            <a href="mailto:eab252@gmail.com" class="pixel-btn bg-track-orange text-white font-mono-code font-bold text-xs px-6 py-3 border-2 border-white">
+                                <i class="fa-solid fa-envelope mr-2"></i>CONTACT ETHAN
+                            </a>
+                            <button onclick="toggleViewMode()" class="pixel-btn bg-white text-black font-mono-code font-bold text-xs px-6 py-3 border-2 border-white">
+                                <i class="fa-solid fa-file-pdf mr-2"></i>VIEW RESUME DOC
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- 800M FINISH LINE MODAL POPUP -->
+    <div id="finish-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+        <div class="bg-white border-4 border-black p-6 md:p-8 max-w-2xl w-full pixel-border-lg relative text-center space-y-6 font-mono-code">
+            <!-- Close Button -->
+            <button onclick="closeFinishModal()" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-3 py-1 border-2 border-black pixel-btn">
+                X
+            </button>
+
+            <!-- Medal Icon -->
+            <div class="w-16 h-16 bg-yellow-400 border-4 border-black rounded-full flex items-center justify-center mx-auto text-3xl shadow-md">
+                🥇
+            </div>
+
+            <!-- Title & Subtitle -->
+            <div>
+                <h2 class="text-2xl md:text-3xl font-black text-track-orange uppercase tracking-tight">
+                    800M GOLD MEDAL FINISH!
+                </h2>
+                <p class="text-[11px] md:text-xs font-bold text-black uppercase mt-1 tracking-wider">
+                    ETHAN BROUW &bull; ALL-AMERICAN & MECHANICAL ENGINEER & MBA
+                </p>
+            </div>
+
+            <!-- 3 Horizons Summary Box -->
+            <div class="bg-amber-50/80 border-2 border-black p-4 text-left space-y-3 pixel-border">
+                <h4 class="font-extrabold text-xs text-black border-b-2 border-black pb-2 uppercase tracking-wide">
+                    3 HORIZONS SUMMARY & VISION:
+                </h4>
+                <ul class="text-[11px] text-gray-900 space-y-2 leading-relaxed">
+                    <li class="flex items-start gap-2">
+                        <span class="font-bold text-black select-none">&bull;</span>
+                        <span><strong>H1 / Perform:</strong> Task execution, calm demeanor, high systems ownership, reading the room to empower teams.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="font-bold text-black select-none">&bull;</span>
+                        <span><strong>H2 / Transform:</strong> Dedicated alter-ego mindset via visualization and elite athletic focus.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="font-bold text-black select-none">&bull;</span>
+                        <span><strong>H3 / Explore:</strong> Balanced mental rhetoric uniting physical ergogenic design & engineering science.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap justify-center gap-4 pt-2">
+                <a href="mailto:eab252@gmail.com" class="pixel-btn bg-black text-white font-bold text-xs px-6 py-3 border-2 border-black">
+                    <i class="fa-solid fa-envelope mr-2"></i>CONTACT ETHAN
+                </a>
+                <button onclick="toggleViewMode(); closeFinishModal();" class="pixel-btn bg-track-orange text-white font-bold text-xs px-6 py-3 border-2 border-black">
+                    <i class="fa-solid fa-file-pdf mr-2"></i>VIEW RESUME DOC
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALTERNATIVE FAST-TRACK DOCUMENT VIEW (Hidden by default) -->
+    <div id="fast-track-container" class="hidden pt-24 pb-16 px-4 max-w-5xl mx-auto space-y-8 font-mono-code relative z-20">
+        
+        <div class="bg-white border-4 border-black p-6 md:p-10 pixel-border-lg text-gray-900 space-y-7">
+            
+            <!-- HEADER SECTION -->
+            <div class="border-b-4 border-black pb-5">
+                <div class="flex flex-wrap justify-between items-start gap-4">
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-black text-track-orange uppercase tracking-wider">ETHAN BROUW</h1>
+                        <p class="text-xs md:text-sm font-bold text-black mt-1 uppercase tracking-wide">
+                            MECHANICAL ENGINEERING CONSULTANT &bull; MBA CANDIDATE '27 &bull; NCAA ALL-AMERICAN
+                        </p>
+                    </div>
+                    <!-- TOP RIGHT BADGES -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-black text-white font-mono-code font-bold text-xs px-3 py-1.5 border border-black shadow">
+                            MBA GPA: 4.00 / 4.00
+                        </span>
+                        <span class="bg-track-orange text-white font-mono-code font-bold text-xs px-3 py-1.5 border border-black shadow">
+                            B.S. ME GPA: 3.69 (Cum Laude)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- CONTACT LINE -->
+                <div class="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-800 mt-3 pt-2 border-t border-gray-300">
+                    <span><i class="fa-solid fa-location-dot text-track-orange mr-1"></i> Annandale, NSW 2038 / Louisville, KY</span>
+                    <span><i class="fa-solid fa-phone text-track-orange mr-1"></i> 0449 649 158</span>
+                    <span><i class="fa-solid fa-envelope text-track-orange mr-1"></i> eab252@gmail.com</span>
+                </div>
+            </div>
+
+            <!-- 1. PROFESSIONAL PROFILE -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between border-b-2 border-black pb-1">
+                    <h2 class="font-extrabold text-sm text-track-orange uppercase tracking-wider">PROFESSIONAL PROFILE</h2>
+                    <i class="fa-solid fa-user-gear text-track-orange text-sm"></i>
+                </div>
+                <p class="text-xs md:text-[13px] leading-relaxed text-gray-800 font-medium">
+                    Dual-discipline Mechanical Engineer and 4.0 MBA candidate combining hands-on MEP consulting experience at Introba with elite NCAA All-American athletic discipline. Proven expertise in building energy modeling, HVAC system design, thermal analysis, and workflow automation (Airtable/Revit). Skilled at bridging high-level strategic vision with detailed engineering execution to deliver sustainable public infrastructure projects under tight deadlines.
+                </p>
+            </section>
+
+            <!-- 2. EDUCATION & ACADEMICS -->
+            <section class="space-y-4">
+                <div class="flex items-center justify-between border-b-2 border-black pb-1">
+                    <h2 class="font-extrabold text-sm text-track-orange uppercase tracking-wider">EDUCATION & ACADEMICS</h2>
+                    <i class="fa-solid fa-graduation-cap text-track-orange text-sm"></i>
+                </div>
+
+                <div class="space-y-4 text-xs">
+                    <!-- Degree 1 -->
+                    <div class="border-l-4 border-track-orange pl-3.5 space-y-1">
+                        <div class="flex flex-wrap justify-between items-baseline">
+                            <h3 class="font-bold text-sm text-black">University of Louisville &mdash; Master of Business Administration (MBA)</h3>
+                            <span class="text-gray-600 font-bold">Aug 2025 &ndash; Present</span>
+                        </div>
+                        <p class="font-bold text-track-orange">GPA: 4.00 / 4.00 | Graduate Assistant & Division I Student-Athlete</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-800 pt-0.5">
+                            <li>Focus on Operations Management, Strategic Systems Design, and Data-Driven Decision Making.</li>
+                            <li>Graduate Assistant mentor providing athletic and academic guidance to collegiate student-athletes.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Degree 2 -->
+                    <div class="border-l-4 border-track-orange pl-3.5 space-y-1">
+                        <div class="flex flex-wrap justify-between items-baseline">
+                            <h3 class="font-bold text-sm text-black">University of New Mexico &mdash; B.S. Mechanical Engineering</h3>
+                            <span class="text-gray-600 font-bold">Aug 2021 &ndash; May 2025</span>
+                        </div>
+                        <p class="font-bold text-black">Graduated Cum Laude | GPA: 3.69 | Thesis: Graphene Foam in Microelectronics</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-800 pt-0.5">
+                            <li><strong>Senior Capstone Thesis:</strong> Conducted thermal modeling and physical testing of high-porosity graphene foam heat sinks for microelectronics cooling.</li>
+                            <li><strong>Honors & Awards:</strong> Mountain West Scholar-Athlete, NCAA First-Team All-American (Indoor 800m).</li>
+                        </ul>
+                    </div>
+
+                    <!-- Degree 3 -->
+                    <div class="border-l-4 border-gray-400 pl-3.5 space-y-1">
+                        <div class="flex flex-wrap justify-between items-baseline">
+                            <h3 class="font-bold text-sm text-black">Trinity Grammar School (Sydney, Australia) &mdash; IB Diploma</h3>
+                            <span class="text-gray-600 font-bold">Graduated 2020</span>
+                        </div>
+                        <p class="text-gray-700">International Baccalaureate (IB) Diploma Graduate | Psychology & Physical Sciences coursework.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. WORK EXPERIENCE -->
+            <section class="space-y-4">
+                <div class="flex items-center justify-between border-b-2 border-black pb-1">
+                    <h2 class="font-extrabold text-sm text-track-orange uppercase tracking-wider">WORK EXPERIENCE</h2>
+                    <i class="fa-solid fa-briefcase text-track-orange text-sm"></i>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Job 1: Introba -->
+                    <div class="border-2 border-black p-4 pixel-border bg-white space-y-2 text-xs">
+                        <div class="flex flex-wrap justify-between items-baseline border-b border-black pb-2">
+                            <h3 class="font-black text-sm text-black">INTROBA &mdash; MECHANICAL ENGINEERING CONSULTANT</h3>
+                            <span class="font-bold text-gray-700">Sydney, Australia</span>
+                        </div>
+                        <p class="font-bold text-track-orange">Mechanical & Energy Systems Engineering Division</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-800">
+                            <li>Engineered HVAC system upgrades and thermal modeling for major public infrastructure, including <strong>Sydney Airport</strong> terminal design overhauls.</li>
+                            <li>Utilized Autodesk Revit and Bluebeam Revu for precise mechanical ducting layout, load calculations, and site engineering audits.</li>
+                            <li>Developed structured Airtable databases and custom tracking workflows to streamline project documentation across multidisciplinary consulting teams.</li>
+                            <li>Collaborated with senior project managers and client stakeholders to ensure environmental compliance and optimal thermal performance.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Job 2: UofL GA -->
+                    <div class="border-2 border-black p-4 pixel-border bg-white space-y-2 text-xs">
+                        <div class="flex flex-wrap justify-between items-baseline border-b border-black pb-2">
+                            <h3 class="font-black text-sm text-black">UNIVERSITY OF LOUISVILLE &mdash; GRADUATE ASSISTANT & MENTOR</h3>
+                            <span class="font-bold text-gray-700">Louisville, KY</span>
+                        </div>
+                        <p class="font-bold text-track-orange">Athletic Department & Executive Business Operations</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-800">
+                            <li>Assist head coaches and athletic directors with team logistical scheduling, performance analysis, and student-athlete development.</li>
+                            <li>Facilitate high-performance mindset workshops and team communication strategy based on leadership matrix methodologies.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. ENGINEERING PROJECTS & SOFTWARE LABS -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between border-b-2 border-black pb-1">
+                    <h2 class="font-extrabold text-sm text-track-orange uppercase tracking-wider">ENGINEERING PROJECTS & SOFTWARE LABS</h2>
+                    <i class="fa-solid fa-microchip text-track-orange text-sm"></i>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <!-- Lab 1 -->
+                    <div class="border-2 border-black p-4 pixel-border bg-white flex flex-col justify-between space-y-3">
+                        <div>
+                            <h3 class="font-bold text-black border-b border-gray-300 pb-1 uppercase">1. VDOT LAB (Performance Engine)</h3>
+                            <p class="text-gray-800 leading-relaxed mt-2">
+                                Interactive web application for biomechanical athletic pace modeling and training zone optimization based on physiological metrics.
+                            </p>
+                        </div>
+                        <a href="https://vdot-lab.vercel.app/" target="_blank" class="font-bold text-track-orange hover:underline inline-flex items-center gap-1.5">
+                            vdot-lab.vercel.app <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <!-- Lab 2 -->
+                    <div class="border-2 border-black p-4 pixel-border bg-white flex flex-col justify-between space-y-3">
+                        <div>
+                            <h3 class="font-bold text-black border-b border-gray-300 pb-1 uppercase">2. META LAB (Platform)</h3>
+                            <p class="text-gray-800 leading-relaxed mt-2">
+                                Custom software dashboard designed to track system metrics, performance indicators, and structural workflows.
+                            </p>
+                        </div>
+                        <a href="https://meta-lab-xi.vercel.app/" target="_blank" class="font-bold text-track-orange hover:underline inline-flex items-center gap-1.5">
+                            meta-lab-xi.vercel.app <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. TECHNICAL SKILLS & COMPETENCIES -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between border-b-2 border-black pb-1">
+                    <h2 class="font-extrabold text-sm text-track-orange uppercase tracking-wider">TECHNICAL SKILLS & COMPETENCIES</h2>
+                    <i class="fa-solid fa-sliders text-track-orange text-sm"></i>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <!-- Column 1 -->
+                    <div class="border-2 border-black p-3.5 pixel-border bg-white space-y-2">
+                        <h3 class="font-bold text-black border-b border-black pb-1 uppercase text-[11px]">ENGINEERING SOFTWARE</h3>
+                        <ul class="space-y-1 text-gray-800">
+                            <li>&bull; Autodesk Revit (BIM)</li>
+                            <li>&bull; Bluebeam Revu</li>
+                            <li>&bull; SolidWorks / CAD</li>
+                            <li>&bull; MATLAB & Simulink</li>
+                            <li>&bull; Thermal Load Modeling</li>
+                        </ul>
+                    </div>
+
+                    <!-- Column 2 -->
+                    <div class="border-2 border-black p-3.5 pixel-border bg-white space-y-2">
+                        <h3 class="font-bold text-black border-b border-black pb-1 uppercase text-[11px]">BUSINESS & SYSTEMS</h3>
+                        <ul class="space-y-1 text-gray-800">
+                            <li>&bull; Airtable Automation</li>
+                            <li>&bull; Systems Ownership (4.0/5)</li>
+                            <li>&bull; Vision Crafting (4.0/5)</li>
+                            <li>&bull; Operations Strategy</li>
+                            <li>&bull; Agile Project Management</li>
+                        </ul>
+                    </div>
+
+                    <!-- Column 3 -->
+                    <div class="border-2 border-black p-3.5 pixel-border bg-white space-y-2">
+                        <h3 class="font-bold text-black border-b border-black pb-1 uppercase text-[11px]">ATHLETICS & HONORS</h3>
+                        <ul class="space-y-1 text-gray-800">
+                            <li>&bull; NCAA All-American (800m)</li>
+                            <li>&bull; Personal Best: 1:47.80</li>
+                            <li>&bull; Cum Laude Graduate</li>
+                            <li>&bull; Academic All-Mountain West</li>
+                            <li>&bull; Team Leadership & Mentorship</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </div>
+
+    <script>
+        let currentMeter = 0;
+        let currentLane = 1; // 0: Left, 1: Center, 2: Right
+        let isViewModeFastTrack = false;
+        let trackCanvas, trackCtx;
+        let trackWaypoints = [];
+        let denseTrackPoints = [];
+
+        function resizeTrackCanvas() {
+            trackCanvas = document.getElementById('winding-track-canvas');
+            if (!trackCanvas) return;
+            trackCtx = trackCanvas.getContext('2d');
+
+            const pageHeight = Math.max(
+                document.documentElement.scrollHeight,
+                document.body.scrollHeight,
+                window.innerHeight
+            );
+            trackCanvas.width = window.innerWidth;
+            trackCanvas.height = pageHeight;
+
+            updateTrackWaypoints();
+            drawWindingTrack();
+        }
+
+        function updateTrackWaypoints() {
+            denseTrackPoints = [];
+            if (!trackCanvas) return;
+
+            const w = trackCanvas.width;
+            const h = trackCanvas.height;
+
+            // Align 0m track start directly alongside the 000M / BLOCKS heading
+            const ckpt0 = document.getElementById('ckpt-0');
+            const startY = ckpt0 ? (ckpt0.offsetTop + 45) : 140;
+
+            const ckpt800 = document.getElementById('ckpt-800');
+            const endY = ckpt800 ? (ckpt800.offsetTop + 140) : (h - 200);
+
+            const trackLengthY = Math.max(400, endY - startY);
+
+            // Generate a smooth serpentine curve with wider sweep amplitude across page margins
+            const numPoints = 180;
+            // Expanded amplitude to oscillate wider into empty side margins (up to 40% of screen width)
+            const amplitude = Math.min(w * 0.40, 580);
+            const centerX = w / 2;
+
+            const rawPoints = [];
+            for (let i = 0; i <= numPoints; i++) {
+                const progress = i / numPoints;
+                const y = startY + progress * trackLengthY;
+                
+                // Sine-wave flow adjusted so 0m starts elegantly beside the heading
+                const x = centerX + Math.sin(progress * Math.PI * 4.5 + 0.35) * amplitude;
+                rawPoints.push({ x, y });
+            }
+
+            // Calculate tangents, angles, and normal vectors for proper lane rendering
+            denseTrackPoints = rawPoints.map((pt, i) => {
+                const prev = rawPoints[Math.max(0, i - 1)];
+                const next = rawPoints[Math.min(rawPoints.length - 1, i + 1)];
+
+                const dx = next.x - prev.x;
+                const dy = next.y - prev.y;
+                const len = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                const tangentX = dx / len;
+                const tangentY = dy / len;
+
+                // Perpendicular normal vector for lane lines
+                const normalX = -tangentY;
+                const normalY = tangentX;
+                const angle = Math.atan2(dy, dx);
+
+                return { x: pt.x, y: pt.y, normalX, normalY, angle };
+            });
+        }
+
+        // Returns {x, y, normalX, normalY, angle} along the continuous curve for progress p [0..1]
+        function getTrackPointAtProgress(p) {
+            if (!denseTrackPoints || denseTrackPoints.length === 0) {
+                return { x: trackCanvas ? trackCanvas.width / 2 : 200, y: p * 1000, normalX: 1, normalY: 0, angle: Math.PI / 2 };
+            }
+            const index = Math.max(0, Math.min(denseTrackPoints.length - 1, Math.floor(p * (denseTrackPoints.length - 1))));
+            return denseTrackPoints[index];
+        }
+
+        function drawWindingTrack() {
+            if (!trackCtx || !trackCanvas || denseTrackPoints.length === 0) return;
+            const w = trackCanvas.width;
+            const h = trackCanvas.height;
+
+            trackCtx.clearRect(0, 0, w, h);
+
+            // 1. Draw Terracotta Red Track Base (Width 110px)
+            trackCtx.lineWidth = 110;
+            trackCtx.strokeStyle = '#C84C31';
+            trackCtx.lineCap = 'round';
+            trackCtx.lineJoin = 'round';
+            trackCtx.beginPath();
+            denseTrackPoints.forEach((pt, i) => {
+                if (i === 0) trackCtx.moveTo(pt.x, pt.y);
+                else trackCtx.lineTo(pt.x, pt.y);
+            });
+            trackCtx.stroke();
+
+            // 2. Draw Solid Black Outer Borders and Dashed Inner Lane Dividers
+            const drawOffsetLine = (offset, color, width, dash = []) => {
+                trackCtx.lineWidth = width;
+                trackCtx.strokeStyle = color;
+                trackCtx.lineCap = 'round';
+                trackCtx.lineJoin = 'round';
+                trackCtx.setLineDash(dash);
+                trackCtx.beginPath();
+                denseTrackPoints.forEach((pt, i) => {
+                    const ox = pt.x + pt.normalX * offset;
+                    const oy = pt.y + pt.normalY * offset;
+                    if (i === 0) trackCtx.moveTo(ox, oy);
+                    else trackCtx.lineTo(ox, oy);
+                });
+                trackCtx.stroke();
+                trackCtx.setLineDash([]);
+            };
+
+            drawOffsetLine(-53, '#000000', 4); // Left Outer Border Line
+            drawOffsetLine(53, '#000000', 4);  // Right Outer Border Line
+
+            // Inner Dashed Lane Dividers
+            drawOffsetLine(-17, '#000000', 2, [14, 12]); // Lane 1 / Lane 2
+            drawOffsetLine(17, '#000000', 2, [14, 12]);  // Lane 2 / Lane 3
+
+            // 3. Draw Starting Blocks & Finish Markings next to Checkpoint 0M
+            if (denseTrackPoints.length > 0) {
+                const startPt = denseTrackPoints[0];
+                drawStartingBlocks(startPt);
+                drawTrackMarker(startPt, "START (0M)");
+                
+                const finishPt = denseTrackPoints[denseTrackPoints.length - 1];
+                drawTrackMarker(finishPt, "FINISH (800M)");
+            }
+
+            // 4. Draw 64-Bit Pixel Runner Sprite on the track
+            const currentP = Math.max(0, Math.min(1, currentMeter / 800));
+            const runnerPt = getTrackPointAtProgress(currentP);
+
+            // Lane Offset (-1: Left, 0: Center, 1: Right) -> [-32px, 0px, +32px]
+            const laneOffset = (currentLane - 1) * 32;
+            const rX = runnerPt.x + runnerPt.normalX * laneOffset;
+            const rY = runnerPt.y + runnerPt.normalY * laneOffset;
+
+            drawRunnerSprite(rX, rY, runnerPt.angle);
+        }
+
+        // Draw detailed retro starting blocks on Lane 2 at 0m
+        function drawStartingBlocks(pt) {
+            trackCtx.save();
+            trackCtx.translate(pt.x, pt.y);
+            trackCtx.rotate(pt.angle);
+
+            // Center rail frame
+            trackCtx.fillStyle = '#4B5563';
+            trackCtx.fillRect(-3, -20, 6, 40);
+            
+            // Left & Right Block Pedals
+            trackCtx.fillStyle = '#111827';
+            trackCtx.fillRect(-14, -12, 8, 16); // Lane 1 block
+            trackCtx.fillRect(-3, -25, 6, 16);  // Center rail block
+            trackCtx.fillRect(6, -8, 8, 16);   // Lane 3 block
+
+            // Metal pedal highlights
+            trackCtx.fillStyle = '#9CA3AF';
+            trackCtx.fillRect(-12, -10, 4, 12);
+            trackCtx.fillRect(-1, -23, 2, 12);
+            trackCtx.fillRect(8, -6, 4, 12);
+
+            trackCtx.restore();
+        }
+
+        function drawTrackMarker(pt, label) {
+            trackCtx.save();
+            trackCtx.translate(pt.x, pt.y);
+            trackCtx.rotate(pt.angle);
+
+            // Black Bar Line across track
+            trackCtx.fillStyle = '#000000';
+            trackCtx.fillRect(-4, -50, 8, 100);
+
+            // Label Box
+            trackCtx.fillStyle = '#FFFFFF';
+            trackCtx.strokeStyle = '#000000';
+            trackCtx.lineWidth = 2;
+            trackCtx.fillRect(-45, -12, 90, 24);
+            trackCtx.strokeRect(-45, -12, 90, 24);
+
+            trackCtx.fillStyle = '#000000';
+            trackCtx.font = 'bold 10px Courier New';
+            trackCtx.textAlign = 'center';
+            trackCtx.textBaseline = 'middle';
+            trackCtx.fillText(label, 0, 0);
+
+            trackCtx.restore();
+        }
+
+        function drawRunnerSprite(x, y, angle) {
+            trackCtx.save();
+            trackCtx.translate(x, y);
+
+            // Rotate runner in direction of track curve
+            trackCtx.rotate(angle + Math.PI / 2);
+
+            // Shadow
+            trackCtx.fillStyle = 'rgba(0,0,0,0.4)';
+            trackCtx.beginPath();
+            trackCtx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
+            trackCtx.fill();
+
+            // Headband & Hair
+            trackCtx.fillStyle = '#111827';
+            trackCtx.fillRect(-7, -26, 14, 12);
+            trackCtx.fillStyle = '#FFFFFF';
+            trackCtx.fillRect(-8, -22, 16, 4);
+
+            // Face
+            trackCtx.fillStyle = '#FFDBAC';
+            trackCtx.fillRect(-6, -14, 12, 6);
+
+            // Red Singlet (Louisville/UNM)
+            trackCtx.fillStyle = '#DC2626';
+            trackCtx.fillRect(-8, -8, 16, 14);
+            trackCtx.fillStyle = '#FFFFFF';
+            trackCtx.fillRect(-3, -5, 6, 7);
+
+            // Black Shorts
+            trackCtx.fillStyle = '#000000';
+            trackCtx.fillRect(-8, 6, 16, 6);
+
+            // Running legs
+            const legSwing = Math.sin(currentMeter * 0.3) * 6;
+            trackCtx.fillStyle = '#FFDBAC';
+            trackCtx.fillRect(-6, 12, 5, 8 + legSwing);
+            trackCtx.fillRect(1, 12, 5, 8 - legSwing);
+
+            // Neon Yellow Spikes
+            trackCtx.fillStyle = '#CCFF00';
+            trackCtx.fillRect(-7, 20 + legSwing, 6, 4);
+            trackCtx.fillRect(1, 20 - legSwing, 6, 4);
+
+            trackCtx.restore();
+        }
+
+        function drawRadarCanvas() {
+            const rCanvas = document.getElementById('leadership-radar-canvas');
+            if (!rCanvas) return;
+            const ctx = rCanvas.getContext('2d');
+            ctx.clearRect(0, 0, rCanvas.width, rCanvas.height);
+
+            const cx = rCanvas.width / 2;
+            const cy = rCanvas.height / 2;
+            const radius = 75;
+
+            const data = [
+                { label: "Systems", val: 4.0 },
+                { label: "Vision", val: 4.0 },
+                { label: "Dialogue", val: 3.67 },
+                { label: "Process", val: 2.67 }
+            ];
+
+            const total = data.length;
+
+            // Concentric web rings
+            [0.25, 0.5, 0.75, 1.0].forEach(rRatio => {
+                ctx.strokeStyle = '#E5E7EB';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 0; i < total; i++) {
+                    const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+                    const rx = cx + Math.cos(angle) * (radius * rRatio);
+                    const ry = cy + Math.sin(angle) * (radius * rRatio);
+                    if (i === 0) ctx.moveTo(rx, ry);
+                    else ctx.lineTo(rx, ry);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            });
+
+            // Axis spokes
+            data.forEach((d, i) => {
+                const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+                const ax = cx + Math.cos(angle) * radius;
+                const ay = cy + Math.sin(angle) * radius;
+                ctx.strokeStyle = '#9CA3AF';
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(ax, ay);
+                ctx.stroke();
+
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 9px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(d.label, ax + Math.cos(angle) * 16, ay + Math.sin(angle) * 14);
+            });
+
+            // Radar Polygon
+            ctx.fillStyle = 'rgba(200, 76, 49, 0.35)';
+            ctx.strokeStyle = '#C84C31';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            data.forEach((d, i) => {
+                const valRatio = d.val / 5.0;
+                const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+                const dx = cx + Math.cos(angle) * (radius * valRatio);
+                const dy = cy + Math.sin(angle) * (radius * valRatio);
+                if (i === 0) ctx.moveTo(dx, dy);
+                else ctx.lineTo(dx, dy);
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function bindScrollEvents() {
+            window.addEventListener('scroll', () => {
+                if (isViewModeFastTrack) return;
+
+                const ckpt0 = document.getElementById('ckpt-0');
+                const ckpt800 = document.getElementById('ckpt-800');
+
+                if (ckpt0 && ckpt800) {
+                    const startY = ckpt0.offsetTop - 100;
+                    const endY = ckpt800.offsetTop - 100;
+                    const scrollY = window.scrollY;
+
+                    const scrollPercent = Math.max(0, Math.min(1, (scrollY - startY) / (endY - startY || 1)));
+                    currentMeter = Math.round(scrollPercent * 800);
+                } else {
+                    const scrollTop = window.scrollY;
+                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                    const scrollPercent = Math.max(0, Math.min(1, scrollTop / (maxScroll || 1)));
+                    currentMeter = Math.round(scrollPercent * 800);
+                }
+
+                updateHUD();
+                drawWindingTrack();
+
+                if (currentMeter >= 800) {
+                    triggerConfetti();
+                }
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (isViewModeFastTrack) return;
+
+                if (e.key === 'ArrowLeft') {
+                    currentLane = Math.max(0, currentLane - 1);
+                    updateHUD();
+                    drawWindingTrack();
+                } else if (e.key === 'ArrowRight') {
+                    currentLane = Math.min(2, currentLane + 1);
+                    updateHUD();
+                    drawWindingTrack();
+                } else if (e.key === 'ArrowDown') {
+                    window.scrollBy({ top: 140, behavior: 'smooth' });
+                } else if (e.key === 'ArrowUp') {
+                    window.scrollBy({ top: -140, behavior: 'smooth' });
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                resizeTrackCanvas();
+            });
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-distance').innerText = `${currentMeter}m / 800m`;
+            document.getElementById('hud-lane').innerText = `LANE ${currentLane + 1}`;
+        }
+
+        function scrollToCheckpoint(id) {
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function switchEmbeddedApp(appKey) {
+            const iframe = document.getElementById('live-stadium-iframe');
+            const title = document.getElementById('embed-title-text');
+            const link = document.getElementById('embed-external-link');
+            const btnVdot = document.getElementById('tab-vdot');
+            const btnMeta = document.getElementById('tab-meta');
+
+            if (appKey === 'vdot') {
+                iframe.src = "https://vdot-lab.vercel.app/";
+                title.innerText = "VDOT LAB — https://vdot-lab.vercel.app/";
+                link.href = "https://vdot-lab.vercel.app/";
+                btnVdot.className = "pixel-btn bg-track-orange text-white font-mono-code font-bold text-xs px-4 py-2 border-2 border-black";
+                btnMeta.className = "pixel-btn bg-white text-black font-mono-code font-bold text-xs px-4 py-2 border-2 border-black";
+            } else {
+                iframe.src = "https://meta-lab-xi.vercel.app/";
+                title.innerText = "META LAB — https://meta-lab-xi.vercel.app/";
+                link.href = "https://meta-lab-xi.vercel.app/";
+                btnMeta.className = "pixel-btn bg-track-orange text-white font-mono-code font-bold text-xs px-4 py-2 border-2 border-black";
+                btnVdot.className = "pixel-btn bg-white text-black font-mono-code font-bold text-xs px-4 py-2 border-2 border-black";
+            }
+        }
+
+        let confettiTriggered = false;
+        let modalShown = false;
+
+        function triggerConfetti() {
+            if (!confettiTriggered) {
+                confettiTriggered = true;
+                confetti({
+                    particleCount: 160,
+                    spread: 100,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            if (!modalShown) {
+                modalShown = true;
+                setTimeout(() => {
+                    const modal = document.getElementById('finish-modal');
+                    if (modal) modal.classList.remove('hidden');
+                }, 400);
+            }
+        }
+
+        function closeFinishModal() {
+            const modal = document.getElementById('finish-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function toggleViewMode() {
+            isViewModeFastTrack = !isViewModeFastTrack;
+            const arcade = document.getElementById('arcade-container');
+            const fastTrack = document.getElementById('fast-track-container');
+            const trackCanvasContainer = document.getElementById('track-canvas-container');
+            const btnLabel = document.getElementById('view-mode-label');
+
+            if (isViewModeFastTrack) {
+                arcade.classList.add('hidden');
+                trackCanvasContainer.classList.add('hidden');
+                fastTrack.classList.remove('hidden');
+                btnLabel.innerText = "ARCADE TRACK VIEW";
+            } else {
+                arcade.classList.remove('hidden');
+                trackCanvasContainer.classList.remove('hidden');
+                fastTrack.classList.add('hidden');
+                btnLabel.innerText = "FAST-TRACK RESUME";
+                setTimeout(() => {
+                    resizeTrackCanvas();
+                    drawRadarCanvas();
+                }, 100);
+            }
+        }
+
+        function resetRunner() {
+            currentMeter = 0;
+            currentLane = 1;
+            confettiTriggered = false;
+            modalShown = false;
+            closeFinishModal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            updateHUD();
+            drawWindingTrack();
+        }
+
+        window.onload = function() {
+            resizeTrackCanvas();
+            drawRadarCanvas();
+            bindScrollEvents();
+            
+            // Re-calculate track waypoints after initial layout pass
+            setTimeout(() => {
+                updateTrackWaypoints();
+                drawWindingTrack();
+            }, 300);
+        };
+    </script>
+</body>
+</html>
